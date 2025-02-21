@@ -10,6 +10,13 @@
 \usepackage{lmodern}
 \usepackage{fancyhdr}
 \usepackage{geometry}
+
+
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{multirow}
+\usepackage{booktabs}
+
 \setlength{\headheight}{24.01996pt}
 \addtolength{\topmargin}{-12.01996pt}
 
@@ -104,14 +111,14 @@ La \textbf{motivación} de este proyecto radica en dos pilares fundamentales. Pr
 
 Los \textbf{objetivos} del proyecto se centran en:
 \begin{itemize}
-    \item[1.] Modelar el problema de diseño de proteínas desde una perspectiva algorítmica, identy pueden realizar ificando sus componentes críticos (espacio de búsqueda, funciones de energía, restricciones biológicas).  
-    \item[2.] Implementar y comparar algoritmos que aborden el diseño de secuencias, evaluando su eficiencia (tiempo y espacio) y efectividad (precisión y estabilidad de las soluciones).  
-    \item[3.] Analizar limitaciones y ventajas de enfoques clásicos frente a métodos modernos basados en aprendizaje automático.  
+    \item[1.] Modelar el problema de diseño de proteínas desde una perspectiva algorítmica, identificando sus componentes críticos (espacio de búsqueda, funciones de energía, restricciones biológicas).  
+    \item[2.] Analizar la complejidad del problema.
+    \item[3.] Implementar un algoritmo que resuelva el problema de forma exacta, evaluando su eficiencia (tiempo y espacio).   
 \end{itemize}
 
 
 
-\chapter{Definici\'on del Problema}
+\chapter{Definici\'on del Problema DCP}
 
 \section{Marco Te\'orico}
 
@@ -209,36 +216,61 @@ y $E(i_r , j_{r'})$ la energía de interacción entre los rotámeros $r$ en la p
 
 
 \section{Modelaci\'on como problema de teor\'ia de grafos}
+
+
  
-Una proteína con $k$ residuos puede ser representada por un grafo $k$-partito $G = (V,E)$, de forma tal que:
+Una proteína con $k$ aminoácidos puede ser representada por un grafo $k$-partito $G = (V,E)$, de forma tal que:
 \begin{itemize}
-    \item hay una partición $V_i$ por cada residuo $i$
-    \item hay un vértice $v \in V_i$ por cada rotámero candidato del residuo $i$
+    \item hay una partición $V_i$ por cada aminoácido $i$
+    \item hay un vértice $v \in V_i$ por cada rotámero candidato del aminoácido $i$
     \item la arista $\langle u,v \rangle$ denota la interacción entre los rotámeros $u$ y $v$
     \item el vértice $v$ tiene un costo $c_v$ que es igual a la energía de interacción entre el rotámero $v$ y el esqueleto
     \item la arista $\langle u,v \rangle$ tiene un costo $c_{ \langle u,v \rangle }$ que es igual a la energía de interacción entre el rotámero $u$ y el rotámero $v$ \\
 \end{itemize}
 
+Cada rotámero puede potencialmente interactuar con cualquier rotámero de cualquier otra posición distinta a la suya, por
+por tanto  $G$ es un grafo $k$-partito completo. Luego, seleccionar un rotámero para cada aminoácido es equivalente a seleccionar
+un clique de tamaño máximo (necesariamente tamaño $k$) (figura \ref{fig4}). \\
+
+\begin{figure}[h!]
+    \begin{center}
+        \includegraphics[scale=0.7]{images/solution.png}
+    \end{center}    
+    \caption{\textbf{(A)} Ejemplo de diseño de una proteína, cada color corresponde a una partición del grafo \textbf{(B)} Ejemplo de clique solución del problema A}
+    \label{fig4}
+\end{figure} 
+
 El problema del \textbf{Dise\~no Computacional de Proteínas (DCP)} se define como:
 
 \begin{quote}
-    Dado un grafo $k$-partito $G = (V,E)$, $V = V_1 \cup V_2 \cup ... \cup V_k$, ponderado en vértices y aristas, hallar la asignaci\'on $a: [k] \rightarrow V$ con $a(i) \in V_i$, tal que 
-    el costo 
-    \[\sum_i c_{a(i)} + \sum_i \sum_{j<i} c_{ \langle a(i),a(j) \rangle }  \]
-    del grafo inducido por el conjunto de vértices $ \lbrace a(i) \rbrace $ sea m\'inimo.
+    Dado un grafo $k$-partito completo $G = (V,E)$, $V = V_1 \cup V_2 \cup ... \cup V_k$, ponderado en vértices y aristas, hallar el 
+    clique $C$ de tamaño $k$ tal que el grafo inducido por $C$ es de costo m\'inimo. \\
+    
+    Lo anterior es equivalente a seleccionar un $v_i \in V_i \ \forall \ 1 \leq i \leq k$, tal que  
+    \[E_{total} = \sum_i c_{v_i} + \sum_i \sum_{j<i} c_{ \langle v_i,v_j \rangle }  \]
+    sea m\'inima.
 \end{quote}
 
 
 \chapter{An\'alisis de complejidad}
 
 
-Para demostrar que \textbf{DCP} es un problema \textbf{NP-Hard}, se realiza una reducción desde el \textbf{problema de Clique}:
-
 \section{DCP $\in$ NP-Hard}
 
-\subsection{Reducción Clique $\propto$ DCP}
 
-Sea $ G = (V, E) $ un grafo no dirigido y $ k $ un entero (instancia del problema de Clique). Se construye un grafo n-partito $ G' $ para el problema de diseño de proteínas como sigue:
+
+\subsection{Definiciones}
+
+
+\begin{itemize}
+    \item \textbf{Clique(G,k)}: Dado un grafo $G$ y un entero $k$, determinar si en $G$ existe un clique de tamaño $k$.
+    \item \textbf{DCP\_E(G,E)}: Dado un grafo $n$-partito completo $G$ y una constante $E$, determinar si $G$ tiene un clique
+    de tamaño $n$ y costo $E_{total} \leq E$.
+\end{itemize}
+
+\subsection{Reducción Clique $\propto$ DCP\_E}
+
+Sea $(G=(V,E),k)$ una instancia de Clique, $n=|V|$, se construye un grafo $n$-partito completo $G'$  como sigue:
 
 \begin{itemize}
     \item[1.] Particiones de $ G' $
@@ -246,8 +278,8 @@ Sea $ G = (V, E) $ un grafo no dirigido y $ k $ un entero (instancia del problem
         \item Cada vértice $ v_i \in V $ corresponde a una partición $ V_i $ en $ G' $.  
         \item Cada partición $ P_i $ tiene dos vértices:  
         \begin{itemize}
-            \item $ a_i $ (representa "incluir $ v_i $ en el clique"), con peso 0. 
-            \item $ b_i $ (representa "excluir $ v_i $"), con peso 1.  
+            \item $ a_i $ (representa incluir $ v_i $ en el clique), con peso 0. 
+            \item $ b_i $ (representa excluir $ v_i $), con peso 1.  
         \end{itemize}
     \end{itemize}
     \item[2.] Aristas en $ G' $
@@ -278,7 +310,7 @@ Sea $ G = (V, E) $ un grafo no dirigido y $ k $ un entero (instancia del problem
 \subsection{Equivalencia de soluciones}
 
 \begin{theorem*}
-    $G$ tiene un clique de tamaño $k$ si y solo si $G'$ tiene un subgrafo inducido de peso menor o igual que 0.
+    $G$ tiene un clique de tamaño $k$ si y solo si $G'$ tiene un clique de tamaño $n$ y costo $E_{total} \leq 0$ .
 \end{theorem*}
 
 \noindent
@@ -288,23 +320,28 @@ Sea $ G = (V, E) $ un grafo no dirigido y $ k $ un entero (instancia del problem
 ($\Rightarrow$) \\
 
 
-Seleccionando los vértices $ a_i $ correspondientes a los $ k $ nodos del clique en $ G $, el subgrafo inducido en $ G' $ cumple que:  
+Seleccionando los vértices $ a_i $ correspondientes a los $ k $ nodos del clique en $ G $, el conjunto formado por esos v\'ertices es un clique de tamaño $n$ y cumple que:  
 
 \begin{itemize}
     \item Los vértices $ a_i $ tienen peso 0.  
     \item Las aristas entre ellos tienen peso 0 (porque forman un clique en $ G $).  
 \end{itemize}
 
-Por tanto, el peso total es de 0. \\
+Por tanto, tiene costo $E_{total} = 0 \leq 0$. \\
 
 ($\Leftarrow$) \\ 
- 
+Seleccionando el clique en cuesti\'on:
 \begin{itemize}
-    \item Todos los vértices del subgrafo deben ser $ a_i $ (ya que cualquier $ b_i $ añadiría peso).
+    \item Todos los vértices del clique deben ser $ a_i $ (ya que cualquier $ b_i $ añadiría peso).
     \item Las aristas entre estos $ a_i $ deben tener peso 0, lo que implica que $ \langle v_i, v_j \rangle \in E $ para todo par.      
 \end{itemize}
 
-Esto corresponde a un clique de tamaño $ k $ en $ G $.  
+Esto corresponde a un clique de tamaño $ k $ en $ G $.  $\square$
+
+Dado que Clique es un conocido problema NP-Completo, con la reducción anterior se ha demostrado que DCP\_E es un problema
+NP-Hard. También es f\'acil comprobar que DCP\_E es NP, por tanto, es NP-Completo. Luego, como DCP es un problema
+de optimización correspondiente a un problema de decisi\'on NP-Completo, $DCP \in NP-Hard$
+
 
 
 
@@ -336,5 +373,368 @@ Esto corresponde a un clique de tamaño $ k $ en $ G $.
 % \chapter{Conclusiones}
 
 % Al integrar fundamentos algorítmicos con desafíos biológicos, este proyecto no solo busca profundizar en el entendimiento teórico de problemas de optimización complejos, sino también demostrar cómo el diseño computacional puede catalizar innovaciones prácticas en bioingeniería.
+
+
+\section{DCP no es aproximable}
+
+Supondremos la existencia de un algoritmo de aproximación con factor constante $\alpha \geq 1$ y mostraremos que esto permitiría resolver 3-SAT en tiempo polinomial, contradiciendo la NP-dureza del problema.
+
+
+\subsection{Reducción 3-SAT $\propto$ DCP}
+Para cualquier $\alpha \geq 1$, construimos un grafo $m$-partito completo $G$ desde una fórmula 3-CNF $\phi$ con $m$ cláusulas:
+
+\begin{itemize}
+    \item \textbf{Particiones}: $m$ particiones (uno por cláusula)
+    \item \textbf{Nodos}: 3 por partición (literales de la cláusula)
+    \item \textbf{Pesos en nodos}: $1$ para todos los nodos
+    \item \textbf{Pesos en aristas}:
+    \[
+    w(u,v) = 
+    \begin{cases}
+        0, & \text{si } u \text{ y } v \text{ son consistentes} \\
+        W, & \text{con } W = \lceil (\alpha - 1)m \rceil + 1 \quad (\text{para literales inconsistentes})
+    \end{cases}
+    \]
+\end{itemize}
+
+\subsection{Análisis de Costos}
+\begin{itemize}
+    \item Caso 1: $\phi$ es satisfacible
+    \begin{itemize}
+        \item \textbf{Costo nodos}: $m \times 1 = m$
+        \item \textbf{Costo aristas}: $0$ (sin inconsistencias)
+        \item \textbf{OPT} = $m$
+    \end{itemize}
+    \item Caso 2: $\phi$ no es satisfacible
+    \begin{itemize}
+        \item \textbf{Costo nodos}: $m \times 1 = m$
+        \item \textbf{Costo aristas}: $\geq W$ (al menos una inconsistencia)
+        \item \textbf{OPT} $\geq m + W = m + \lceil (\alpha - 1)m \rceil + 1 \geq \alpha m + 1$
+    \end{itemize}
+\end{itemize}
+
+
+\subsection{Ratio de Aproximación}
+Para cualquier algoritmo $\mathcal{A}$ con factor $\alpha$:
+\[
+\frac{\text{Costo}(\mathcal{A}(G))}{\text{OPT}} \leq \alpha
+\]
+Esto implica:
+\[
+\begin{cases}
+\mathcal{A}(G) \leq \alpha m & \text{si } \phi \text{ es satisfacible} \\
+\mathcal{A}(G) \geq \alpha m + 1 & \text{si } \phi \text{ no es satisfacible}
+\end{cases}
+\]
+
+\subsection{Contradicción}
+Un algoritmo $\alpha$-aproximado distinguiría entre los dos casos en tiempo polinomial:
+\begin{enumerate}
+    \item Si $\mathcal{A}(G) \leq \alpha m \Rightarrow \phi$ es satisfacible
+    \item Si $\mathcal{A}(G) \geq \alpha m + 1 \Rightarrow \phi$ no es satisfacible
+\end{enumerate}
+
+Esto resolvería 3-SAT en tiempo polinomial, por tanto DCP no puede ser aproximado dentro de ningún factor constante salvo que P = NP.
+
+
+
+
+
+\chapter{Solución}
+
+
+
+\section{Branch and Bound (B\&B)}
+
+El algoritmo B\&B construye progresivamente el clique seleccionando un residuo por partición. En cada paso:
+
+\begin{itemize}
+\item \textbf{Ramificación}: Genera subproblemas al elegir diferentes nodos de la partición actual
+\item \textbf{Acotamiento}: Calcula una cota inferior (LB) del costo mínimo posible para completar el clique
+\item \textbf{Poda}: Si LB $\geq$ mejor solución actual, abandona esa rama
+\end{itemize}
+
+
+\subsection{Pseudocódigo}
+\begin{algorithm}[H]
+\caption{Branch and Bound para DCP}
+\begin{algorithmic}[1]
+\State \textbf{Entrada:} Grafo $k$-partito completo con costos en nodos y aristas
+\State \textbf{Salida:} Clique de costo mínimo
+\State Inicializar \texttt{mejor\_costo} $\leftarrow \infty$
+\Procedure{BranchAndBound}{$S$, $costo$, $P$}
+    \If{$P = \emptyset$}
+        \If{$costo < \texttt{mejor\_costo}$}
+            \State Actualizar solución óptima
+        \EndIf
+        \Return
+    \EndIf
+    \State Seleccionar partición $p \in P$
+    \For{cada nodo $v \in p$}
+        \State $nuevo\_costo \leftarrow costo + C(v) + \sum_{u \in S}C(u,v)$
+        \State $lb \leftarrow$ \textsc{CotaInferior}($S \cup \{v\}$, $P \setminus \{p\}$)
+        \If{$nuevo\_costo + lb < \texttt{mejor\_costo}$}
+            \State Llamar recursivamente \textsc{BranchAndBound}
+        \EndIf
+    \EndFor
+\EndProcedure
+\end{algorithmic}
+\end{algorithm}
+
+% El algoritmo B\&B construye progresivamente el clique seleccionando un residuo por partición. En cada paso:
+
+% \begin{itemize}
+% \item \textbf{Ramificación}: Genera subproblemas al elegir diferentes nodos de la partición actual
+% \item \textbf{Acotamiento}: Calcula una cota inferior (LB) del costo mínimo posible para completar el clique
+% \item \textbf{Poda}: Si LB $\geq$ mejor solución actual, abandona esa rama
+% \end{itemize}
+
+% \textbf{Correctitud Formal}:
+% \begin{enumerate}
+% \item \textbf{Base inductiva}: Al incluir todas $k$ particiones ($P = \emptyset$), se evalúa el clique completo
+% \item \textbf{Paso inductivo}: Si la cota inferior para $S \cup \{v\}$ es admisible, la poda no elimina soluciones óptimas
+% \item \textbf{Optimalidad}: Por exploración exhaustiva de residuos no podados
+% \end{enumerate}
+
+% \textbf{Análisis de Complejidad Detallado}:
+% \[
+% T(n,k) = \underbrace{O(n)}_{\text{1er nivel}} \times \underbrace{O(n)}_{\text{2do nivel}} \times \cdots \times \underbrace{O(n)}_{k\text{-ésimo nivel}} = O(n^k)
+% \]
+% La poda reduce la constante pero no el orden polinómico.
+
+\subsection{Correctitud}
+\begin{itemize}
+\item \textbf{Exhaustividad}: Explora todas posibles selecciones de nodos mediante recursión
+\item \textbf{Poda segura}: La cota inferior nunca subestima el costo real (admisible)
+\item \textbf{Optimalidad}: Mantiene registro del mejor clique encontrado durante la exploración
+\end{itemize}
+
+\subsection{Complejidad}
+
+\[
+T(n,k) = \underbrace{O(n)}_{\text{1er nivel}} \times \underbrace{O(n)}_{\text{2do nivel}} \times \cdots \times \underbrace{O(n)}_{k\text{-ésimo nivel}} = O(n^k)
+\]
+La poda reduce la constante pero no el orden polinómic.
+
+\section{Prepodado}
+
+Técnica de reducción previa basada en dominancia estricta entre residuos:
+
+\begin{theorem*}
+Un residuo $i$ puede eliminarse si $\exists j$ en su misma partición tal que:
+\[
+C(i) + \sum_{q \neq p} \min_{r \in q} C(i,r) > C(j) + \sum_{q \neq p} \min_{r \in q} C(j,r)
+\]
+\end{theorem*}
+
+Supongamos que $i$ está en la solución óptima. Reemplazando $i$ por $j$, el nuevo costo sería:
+\[
+C(j) + \sum_{q \neq p} C(j,r^*) \leq C(j) + \sum_{q \neq p} \min C(j,r) < C(i) + \sum \min C(i,r)
+\]
+Contradice la optimalidad de $i$. Luego, $i$ no puede ser parte de la solución óptima.
+
+
+% \textbf{Complejidad por Capas}:
+% \begin{align*}
+% \text{Particiones} &: O(k) \\
+% \text{Residuos por partición} &: O(n^2) \text{ (todas parejas }i,j) \\
+% \text{Particiones restantes} &: O(k) \\
+% \text{Residuos en } q &: O(n) \\
+% \Rightarrow \text{Total} &: O(k^3 n^3)
+% \end{align*}
+
+\subsection{Pseudocódigo}
+\begin{algorithm}[H]
+\caption{Dead End Elimination}
+\begin{algorithmic}[1]
+\For{cada partición $p \in \{1,\ldots,k\}$}
+    \For{cada nodo $i \in p$}
+        \For{cada nodo $j \in p \setminus \{i\}$}
+            \State Calcular $\Delta = C(i) - C(j)$
+            \For{cada partición $q \neq p$}
+                \State $\Delta \leftarrow \Delta + \min_{r \in q}[C(i,r) - C(j,r)]$
+            \EndFor
+            \If{$\Delta > 0$}
+                \State Eliminar nodo $i$ de $p$
+                \State \textbf{break}
+            \EndIf
+        \EndFor
+    \EndFor
+\EndFor
+\end{algorithmic}
+\end{algorithm}
+
+
+\subsection{Complejidad}
+
+\begin{align*}
+\text{Particiones} &: O(k) \\
+\text{Residuos por partición} &: O(n^2) \text{ (todas parejas }i,j) \\
+\text{Particiones restantes} &: O(k) \\
+\text{Residuos en } q &: O(n) \\
+\Rightarrow \text{Total} &: O(k^2 n^3)
+\end{align*}
+
+\section{Cotas Inferiores: Greedy vs Programación Dinámica}
+
+\subsection{Cota Greedy}
+Estrategia que considera mínimos locales:
+\[
+lb_{greedy} = \sum_{q \in rest} \left[ \min_{v \in q} \left( C(v) + \sum_{u \in S} C(u,v) \right) \right]
+\]
+
+\textbf{Límites}:
+\begin{itemize}
+\item Subestima costos entre particiones no seleccionadas
+\item No considera interdependencias futuras
+\item Fácil de calcular pero poco ajustada
+\end{itemize}
+
+\subsection{Cota con Programación Dinámica}
+Precomputa costos mínimos desde cada partición:
+
+\begin{align*}
+dp[p][v] &= C(v) + \min_{q > p} \left( \min_{u \in q} [ C(v,u) + dp[q][u] ] \right) \\
+lb_{dp} &= \min_{v \in p_1} \left( dp[p_1][v] + \sum_{u \in S} C(u,v) \right)
+\end{align*}
+
+\textbf{Ventajas Clave}:
+\begin{itemize}
+\item Captura costos acumulativos óptimos hacia el futuro
+\item Considera relaciones entre todas las particiones restantes
+\item Requiere preprocesamiento pero ofrece cotas más precisas
+\end{itemize}
+
+\subsection{Análisis Experimental Teórico}
+\begin{table}[h]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Método} & \textbf{Tiempo Preproc.} & \textbf{Tiempo por Cota} & \textbf{Memoria} & \textbf{Efectividad Poda} \\
+\midrule
+Greedy & 0 & $O(k^2n^2)$ & $O(1)$ & Baja \\
+DP & $O(k^2n^2)$ & $O(n)$ & $O(kn)$ & Alta \\
+\bottomrule
+\end{tabular}%
+}
+\end{table}
+
+\section{Conclusión}
+\begin{itemize}
+\item DEE reduce efectivamente el espacio de búsqueda
+\item B\&B con DP logra mejores podas pero requiere más memoria
+\item La combinación DEE + B\&B + DP es óptima para instancias medianas
+\end{itemize}
+
+
+% \section{Branch and Bound (B\&B)}
+% El algoritmo B\&B construye progresivamente el clique seleccionando un residuo por partición. En cada paso:
+
+% \begin{itemize}
+% \item \textbf{Ramificación}: Genera subproblemas al elegir diferentes nodos de la partición actual
+% \item \textbf{Acotamiento}: Calcula una cota inferior (LB) del costo mínimo posible para completar el clique
+% \item \textbf{Poda}: Si LB $\geq$ mejor solución actual, abandona esa rama
+% \end{itemize}
+
+% \textbf{Correctitud Formal}:
+% \begin{enumerate}
+% \item \textbf{Base inductiva}: Al incluir todas $k$ particiones ($P = \emptyset$), se evalúa el clique completo
+% \item \textbf{Paso inductivo}: Si la cota inferior para $S \cup \{v\}$ es admisible, la poda no elimina soluciones óptimas
+% \item \textbf{Optimalidad}: Por exploración exhaustiva de residuos no podados
+% \end{enumerate}
+
+% \textbf{Análisis de Complejidad Detallado}:
+% \[
+% T(n,k) = \underbrace{O(n)}_{\text{1er nivel}} \times \underbrace{O(n)}_{\text{2do nivel}} \times \cdots \times \underbrace{O(n)}_{k\text{-ésimo nivel}} = O(n^k)
+% \]
+% La poda reduce la constante pero no el orden polinómico.
+
+% \subsection{Prepodado con Dead End Elimination (DEE)}
+% Técnica de reducción previa basada en dominancia estricta entre residuos:
+
+% \begin{theorem}[Condición de Eliminación]
+% Un residuo $i$ puede eliminarse si $\exists j$ en su misma partición tal que:
+% \[
+% C(i) + \sum_{q \neq p} \min_{r \in q} C(i,r) > C(j) + \sum_{q \neq p} \min_{r \in q} C(j,r)
+% \]
+% \end{theorem}
+
+% \textbf{Demostración de Correctitud}:
+% \begin{proof}
+% Supongamos que $i$ está en la solución óptima. Reemplazando $i$ por $j$, el nuevo costo sería:
+% \[
+% C(j) + \sum_{q \neq p} C(j,r^*) \leq C(j) + \sum_{q \neq p} \min C(j,r) < C(i) + \sum \min C(i,r)
+% \]
+% Contradice la optimalidad de $i$. Luego, $i$ no puede ser parte de la solución óptima.
+% \end{proof}
+
+% \textbf{Complejidad por Capas}:
+% \begin{align*}
+% \text{Particiones} &: O(k) \\
+% \text{Residuos por partición} &: O(n^2) \text{ (todas parejas }i,j) \\
+% \text{Particiones restantes} &: O(k) \\
+% \text{Residuos en } q &: O(n) \\
+% \Rightarrow \text{Total} &: O(k^3 n^3)
+% \end{align*}
+
+% \section{Cotas Inferiores: Greedy vs Programación Dinámica}
+
+% \subsection{Cota Greedy}
+% Estrategia miope que considera mínimos locales:
+% \[
+% lb_{greedy} = \sum_{q \in rest} \left[ \min_{v \in q} \left( C(v) + \sum_{u \in S} C(u,v) \right) \right]
+% \]
+
+% \textbf{Límites}:
+% \begin{itemize}
+% \item Subestima costos entre particiones no seleccionadas
+% \item No considera interdependencias futuras
+% \item Fácil de calcular pero poco ajustada
+% \end{itemize}
+
+% \subsection{Cota con Programación Dinámica}
+% Precomputa costos mínimos desde cada partición:
+
+% \begin{align*}
+% dp[p][v] &= C(v) + \min_{q > p} \left( \min_{u \in q} [ C(v,u) + dp[q][u] ] \right) \\
+% lb_{dp} &= \min_{v \in p_1} \left( dp[p_1][v] + \sum_{u \in S} C(u,v) \right)
+% \end{align*}
+
+% \textbf{Ventajas Clave}:
+% \begin{itemize}
+% \item Captura costos acumulativos óptimos hacia el futuro
+% \item Considera relaciones entre todas las particiones restantes
+% \item Requiere preprocesamiento pero ofrece cotas más precisas
+% \end{itemize}
+
+% \subsection{Análisis Experimental Teórico}
+% \begin{table}[h]
+% \centering
+% \resizebox{\textwidth}{!}{%
+% \begin{tabular}{lcccc}
+% \toprule
+% \textbf{Método} & \textbf{Tiempo Preproc.} & \textbf{Tiempo por Cota} & \textbf{Memoria} & \textbf{Efectividad Poda} \\
+% \midrule
+% Greedy & 0 & $O(k^2n^2)$ & $O(1)$ & Baja \\
+% DP & $O(k^2n^2)$ & $O(n)$ & $O(kn)$ & Alta \\
+% \bottomrule
+% \end{tabular}%
+% }
+% \end{table}
+
+% \section{Conclusión}
+% La combinación DEE + B\&B con DP logra:
+% \begin{itemize}
+% \item \textbf{Reducción exponencial} del espacio de búsqueda por DEE
+% \item \textbf{Poda eficiente} gracias a cotas inferiores precisas
+% \item \textbf{Balance} entre tiempo preprocesamiento y exploración
+% \end{itemize}
+
+% Para proteínas con $k \leq 20$ y $n \leq 50$, este enfoque es práctico. Casos mayores requieren heurísticas aproximadas o paralelización.
+
+
+
+
 
 \end{document}
